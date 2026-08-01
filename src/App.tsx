@@ -5,6 +5,7 @@ import { TitleBar } from "@/components/TitleBar";
 import { Sidebar } from "@/components/Sidebar/Sidebar";
 import { PlayerBar } from "@/components/PlayerBar/PlayerBar";
 import { LyricsPanel } from "@/components/Lyrics/LyricsPanel";
+import { MiniPlayer } from "@/components/MiniPlayer";
 import { LibraryPage } from "@/pages/Music/LibraryPage";
 import { AlbumsPage } from "@/pages/Music/AlbumsPage";
 import { ArtistsPage } from "@/pages/Music/ArtistsPage";
@@ -33,6 +34,7 @@ import type { ScanProgress } from "@/lib/types";
  */
 function App() {
   const [page, setPage] = useState<NavPage>("library");
+  const [pipActive, setPipActive] = useState(false);
 
   // 启动初始化：主题/设置 → 引擎适配器 → 播放器状态 + Channel → 曲库首屏
   useEffect(() => {
@@ -74,15 +76,24 @@ function App() {
     };
   }, []);
 
-  // 视频页：body 透明让 mpv 视频透出；离开视频页恢复
+  // 视频页或 PiP 激活时：body 透明让 mpv 视频透出
   useEffect(() => {
-    if (page === "video") {
+    if (page === "video" || pipActive) {
       document.body.classList.add("video-transparent");
     } else {
       document.body.classList.remove("video-transparent");
     }
     return () => document.body.classList.remove("video-transparent");
-  }, [page]);
+  }, [page, pipActive]);
+
+  // 监听 PiP 状态变更事件（VideoPage 发出）
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setPipActive((e as CustomEvent<boolean>).detail);
+    };
+    window.addEventListener("porrima:pip-change", handler);
+    return () => window.removeEventListener("porrima:pip-change", handler);
+  }, []);
 
   useKeyboard();
 
@@ -93,7 +104,7 @@ function App() {
     <TooltipProvider>
       <div className={cn(
         "flex h-screen flex-col overflow-hidden text-foreground",
-        page !== "video" && "bg-background",
+        page !== "video" && !pipActive && "bg-background",
       )}>
         <TitleBar />
         <div className="relative flex min-h-0 flex-1">
@@ -115,6 +126,14 @@ function App() {
       </div>
       <Toaster position="bottom-right" />
       <CreatePlaylistDialog />
+      {/* 画中画浮窗：PiP 激活且不在视频页时显示 */}
+      <MiniPlayer
+        active={pipActive && page !== "video"}
+        onRestore={() => {
+          setPipActive(false);
+          setPage("video");
+        }}
+      />
     </TooltipProvider>
   );
 }

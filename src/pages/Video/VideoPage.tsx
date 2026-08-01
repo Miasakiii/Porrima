@@ -6,6 +6,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Pause,
+  PictureInPicture2,
   Play,
   SlidersHorizontal,
   SkipBack,
@@ -20,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { usePlayerStore } from "@/stores/playerStore";
 import { toggleFullscreen } from "@/hooks/useKeyboard";
 import { formatDuration } from "@/lib/format";
-import { takeScreenshot } from "@/lib/engine";
+import { takeScreenshot, enterPiP } from "@/lib/engine";
 import { FileBrowser } from "@/components/VideoBrowser/FileBrowser";
 import { TrackPanel } from "@/components/VideoBrowser/TrackPanel";
 import { VideoAdjustPanel } from "@/components/VideoBrowser/VideoAdjustPanel";
@@ -298,6 +299,19 @@ export function VideoPage() {
               title="截图 (F12)"
             >
               <Camera className="size-4" />
+            </button>
+
+            {/* 画中画 */}
+            <button
+              type="button"
+              onClick={() => {
+                void enterPiP();
+                window.dispatchEvent(new CustomEvent("porrima:pip-change", { detail: true }));
+              }}
+              className="rounded p-1.5 text-white/80 transition-colors hover:text-white"
+              title="画中画"
+            >
+              <PictureInPicture2 className="size-4" />
             </button>
 
             {/* 音量 */}

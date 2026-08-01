@@ -9,6 +9,7 @@ import {
   listenEvents,
   observeProperties,
   setProperty,
+  setVideoMarginRatio,
   type MpvObservableProperty,
 } from "tauri-plugin-libmpv-api";
 import { AppEvents } from "@/lib/events";
@@ -425,4 +426,16 @@ export async function setSubColor(hex: string): Promise<void> {
 /** 设置字幕底部边距（像素）。 */
 export async function setSubMarginY(px: number): Promise<void> {
   await setProperty("sub-margin-y", px);
+}
+
+// ---------- 画中画 (PiP) ----------
+
+/** 进入画中画：将视频约束到右下角小区域。 */
+export async function enterPiP(): Promise<void> {
+  await setVideoMarginRatio({ left: 0.72, top: 0.6, right: 0.01, bottom: 0.13 });
+}
+
+/** 退出画中画：恢复全屏视频。 */
+export async function exitPiP(): Promise<void> {
+  await setVideoMarginRatio({ left: 0, top: 0, right: 0, bottom: 0 });
 }
