@@ -7,6 +7,13 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  SHORTCUT_ACTIONS,
+  eventToBinding,
+  getBindings,
+  resetShortcuts,
+  setBinding,
+} from "@/lib/shortcuts";
 import type { AudioBackend, ReplayGainMode, Theme } from "@/lib/types";
 
 const THEME_OPTIONS: { value: Theme; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -264,31 +271,65 @@ function ScreenshotSection() {
   );
 }
 
-const SHORTCUTS: { keys: string; action: string }[] = [
-  { keys: "Space", action: "播放 / 暂停" },
-  { keys: "Ctrl + ←", action: "上一首" },
-  { keys: "Ctrl + →", action: "下一首" },
-  { keys: "Ctrl + ↑", action: "音量 +5" },
-  { keys: "Ctrl + ↓", action: "音量 -5" },
-  { keys: "Ctrl + M", action: "静音" },
-  { keys: "F11", action: "全屏切换" },
-  { keys: "F12", action: "截图（视频模式）" },
-];
-
 function ShortcutsSection() {
+  const [bindings, setBindings] = useState<Record<string, string>>(() => getBindings());
+  const [recording, setRecording] = useState<string | null>(null);
+
+  // 录制模式：监听下一次按键作为新绑定
+  useEffect(() => {
+    if (!recording) return;
+    const handler = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === "Escape") {
+        setRecording(null);
+        return;
+      }
+      const binding = eventToBinding(e);
+      if (binding) {
+        setBinding(recording, binding);
+        setBindings(getBindings());
+        setRecording(null);
+      }
+    };
+    window.addEventListener("keydown", handler, { capture: true });
+    return () => window.removeEventListener("keydown", handler, { capture: true });
+  }, [recording]);
+
+  const handleReset = () => {
+    resetShortcuts();
+    setBindings(getBindings());
+  };
+
   return (
     <section className="space-y-3">
-      <div>
-        <h2 className="text-base font-medium">快捷键</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">全局快捷键，输入框内不生效</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-medium">快捷键</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            点击按键后按下新组合键即可重新绑定，Esc 取消
+          </p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={handleReset} className="h-7 text-xs">
+          恢复默认
+        </Button>
       </div>
-      <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-        {SHORTCUTS.map(({ keys, action }) => (
-          <div key={keys} className="flex items-center justify-between py-0.5">
-            <span className="text-[13px] text-muted-foreground">{action}</span>
-            <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-[11px] font-medium text-foreground">
-              {keys}
-            </kbd>
+      <div className="space-y-1">
+        {SHORTCUT_ACTIONS.map(({ id, label }) => (
+          <div key={id} className="flex items-center justify-between py-1">
+            <span className="text-[13px] text-muted-foreground">{label}</span>
+            <button
+              type="button"
+              onClick={() => setRecording(id)}
+              className={cn(
+                "min-w-[100px] rounded border px-2 py-1 text-center text-[11px] font-medium transition-colors",
+                recording === id
+                  ? "animate-pulse border-accent bg-accent/10 text-accent"
+                  : "border-border bg-muted text-foreground hover:border-accent/50",
+              )}
+            >
+              {recording === id ? "按下按键…" : bindings[id] || "未绑定"}
+            </button>
           </div>
         ))}
       </div>
