@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Porrima</title>
+    <script>
+      // 防主题闪烁：在 CSS/JS 加载前根据本地缓存的主题偏好设置 .dark class。
+      // 与 src/lib/theme.ts 的 THEME_STORAGE_KEY 保持一致。
+      (function () {
+        var t = "dark";
+        try {
+          t = localStorage.getItem("porrima-theme") || "dark";
+        } catch (e) {}
+        var dark =
+          t === "dark" ||
+          (t === "system" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        var root = document.documentElement;
+        root.classList.toggle("dark", dark);
+        root.style.colorScheme = dark ? "dark" : "light";
+        root.style.backgroundColor = dark ? "#1c1a18" : "#faf8f5";
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
